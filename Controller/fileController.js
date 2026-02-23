@@ -1,22 +1,31 @@
+const fs = require('fs');
+const path = require('path');
 const FileModel = require('../Model/fileModel');
 
 exports.uploadFile = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'File is required' });
+    const { originalName, mimeType, fileData } = req.body;
+
+    if (!fileData) {
+      return res.status(400).json({ message: 'File data is required' });
     }
 
-    // Prepare data for model
-    const fileData = {
-      originalName: req.file.originalname,
-      fileName: req.file.filename,
-      filePath: req.file.path,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype
+    const buffer = Buffer.from(fileData, 'base64');
+
+    const fileName = Date.now() + '-' + originalName;
+    const filePath = path.join('uploads', fileName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const fileDetails = {
+      originalName,
+      fileName,
+      filePath,
+      fileSize: buffer.length,
+      mimeType
     };
 
-    // Call model
-    const result = await FileModel.saveFile(fileData);
+    const result = await FileModel.saveFile(fileDetails);
 
     res.status(201).json({
       message: 'File uploaded successfully',
